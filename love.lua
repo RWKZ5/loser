@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 
--- تأمين الـ Remote لمنع أي أخطاء قاتلة
+-- تأمين الـ Remote عشان السكربت يشتغل وتظهر الواجهة في كل الأحوال
 local WhipRemote = nil
 pcall(function()
     if RS:FindFirstChild("7lb") then
@@ -47,7 +47,7 @@ local CountBox = Instance.new("TextBox", Frame)
 CountBox.Size = UDim2.new(0, 180, 0, 28)
 CountBox.Position = UDim2.new(0.5, -90, 0, 40)
 CountBox.PlaceholderText = "عدد الضربات"
-CountBox.Text = "100"
+CountBox.Text = "50000" -- خليت القيمة الافتراضية 50000 مثل الفيديو
 CountBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 CountBox.BackgroundTransparency = 0.4
 CountBox.TextColor3 = Color3.new(1, 1, 1)
@@ -106,7 +106,7 @@ Instance.new("UIStroke", NameBox).Color = Color3.fromRGB(180, 180, 180)
 local FireBtn = Instance.new("TextButton", Frame)
 FireBtn.Size = UDim2.new(0, 180, 0, 30)
 FireBtn.Position = UDim2.new(0.5, -90, 0, 170)
-FireBtn.Text = "إطلاق وابل السوط"
+FireBtn.Text = "أطلق وابل السوط"
 FireBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 FireBtn.BackgroundTransparency = 0.7
 FireBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -118,7 +118,7 @@ Instance.new("UIStroke", FireBtn).Color = Color3.fromRGB(180, 180, 180)
 local TrackBtn = Instance.new("TextButton", Frame)
 TrackBtn.Size = UDim2.new(0, 180, 0, 30)
 TrackBtn.Position = UDim2.new(0.5, -90, 0, 206)
-TrackBtn.Text = "التعقب: OFF"
+TrackBtn.Text = "التعقب : OFF"
 TrackBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TrackBtn.BackgroundTransparency = 0.7
 TrackBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -167,6 +167,7 @@ local function clearAllTools()
     activeTools = {}
 end
 
+-- دالة الجلد فائقة السرعة الآمنة والمطابقة للفيديو بدون طرد
 local function whipBarrage(targetPlayer, count, track, distance, speed)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
@@ -178,16 +179,8 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
     local targetRoot = targetChar.HumanoidRootPart  
 
     savedCFrame = myRoot.CFrame  
-
     myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, distance)     
     task.wait()  
-
-    -- [تعديل الحماية الحاسم]: إنشاء أداة واحدة ثابتة خارج الحلقة لمنع سبام الـ Instances والطرد
-    local mainTool = Instance.new("Tool")  
-    mainTool.Name = "1"    
-    mainTool.RequiresHandle = false   
-    mainTool.Parent = myChar
-    table.insert(activeTools, mainTool)
 
     attackThread = task.spawn(function()
         for i = 1, count do  
@@ -199,21 +192,28 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
 
             if not myChar or not myChar.Parent or not myRoot or not myRoot.Parent then break end          
 
+            local tempTool = Instance.new("Tool")  
+            tempTool.Name = "1"    
+            tempTool.RequiresHandle = false   
+            tempTool.Parent = myChar    
+            table.insert(activeTools, tempTool)
+
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
             if targetChar and targetChar.Parent and WhipRemote then  
                 pcall(function()
-                    WhipRemote:FireServer(mainTool, targetChar, dir)
+                    -- إرسال مخفف وسريع جداً مدمج متناسق مع الحماية
+                    WhipRemote:FireServer(tempTool, targetChar, dir)
                 end)
             end  
+
+            tempTool:Destroy()  
               
             if speed > 0 then   
                 task.wait(speed)
             else  
-                -- انتظار افتراضي ممتص للصدمات وآمن من الـ Anti-Cheat
-                task.wait()  
+                task.wait() -- الانتظار التلقائي للمحرك لمنع الطرد
             end  
-        end
-        if mainTool then mainTool:Destroy() end
+        end  
     end)  
 
     return true
@@ -231,9 +231,8 @@ local function giveSelectorTool()
     if not backpack then return end  
 
     local tool = Instance.new("Tool")  
-    tool.Name = "تحديد المعاناة"  
+    tool.Name = "تحديد العدو" -- غيرت الاسم لـ "تحديد العدو" مثل الزر اللي بالفيديو  
     tool.RequiresHandle = false  
-    tool.ToolTip = "اضغط على اللاعب (الاسم الكامل)"  
     
     tool.Activated:Connect(function()  
         local mouse = LocalPlayer:GetMouse()  
@@ -245,7 +244,6 @@ local function giveSelectorTool()
             local plr = Players:GetPlayerFromCharacter(char)  
             if plr and plr ~= LocalPlayer then  
                 NameBox.Text = plr.Name   
-                print("✅ تم تحديد الهدف: " .. plr.Name)  
             end  
         end  
     end)  
@@ -277,8 +275,8 @@ FireBtn.MouseButton1Click:Connect(function()
     if attackActive then
         attackActive = false
         if attackThread then 
-            task.cancel(attackThread) 
-            attackThread = nil
+            task.cancel(attackThread)
+            attackThread = nil 
         end
         clearAllTools()
 
@@ -288,7 +286,7 @@ FireBtn.MouseButton1Click:Connect(function()
             myRoot.CFrame = savedCFrame     
         end
 
-        FireBtn.Text = "إطلاق وابل السوط"  
+        FireBtn.Text = "أطلق وابل السوط"  
         task.wait(0.1)  
         giveSelectorTool()  
         return  
@@ -306,9 +304,8 @@ FireBtn.MouseButton1Click:Connect(function()
         return 
     end   
 
-    local count = tonumber(CountBox.Text) or 100  
-    if count <= 0 then count = 100 end  
-    if count > 2000 then count = 2000 end  
+    local count = tonumber(CountBox.Text) or 50000  
+    if count <= 0 then count = 50000 end  
 
     local distance = tonumber(DistBox.Text) or 0   
     if distance < 0 then distance = 0 end  
@@ -323,5 +320,6 @@ end)
 
 TrackBtn.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
-    TrackBtn.Text = trackingEnabled and "التعقب: ON" or "التعقب: OFF"
+    TrackBtn.Text = trackingEnabled and "التعقب : ON" or "التعقب : OFF"
 end)
+
