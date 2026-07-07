@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 
--- تأمين الـ Remote عشان السكربت يشتغل وتظهر الواجهة في كل الأحوال
+-- تأمين الـ Remote وضمان ظهور الواجهة
 local WhipRemote = nil
 pcall(function()
     if RS:FindFirstChild("7lb") then
@@ -47,7 +47,7 @@ local CountBox = Instance.new("TextBox", Frame)
 CountBox.Size = UDim2.new(0, 180, 0, 28)
 CountBox.Position = UDim2.new(0.5, -90, 0, 40)
 CountBox.PlaceholderText = "عدد الضربات"
-CountBox.Text = "50000" -- خليت القيمة الافتراضية 50000 مثل الفيديو
+CountBox.Text = "50000"
 CountBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 CountBox.BackgroundTransparency = 0.4
 CountBox.TextColor3 = Color3.new(1, 1, 1)
@@ -167,7 +167,7 @@ local function clearAllTools()
     activeTools = {}
 end
 
--- دالة الجلد فائقة السرعة الآمنة والمطابقة للفيديو بدون طرد
+-- إرجاع دالة الجلد الأصلية والآمنة التي تفعل الأداة الوهمية أولاً لتجنب الطرد
 local function whipBarrage(targetPlayer, count, track, distance, speed)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
@@ -201,8 +201,9 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
             if targetChar and targetChar.Parent and WhipRemote then  
                 pcall(function()
-                    -- إرسال مخفف وسريع جداً مدمج متناسق مع الحماية
-                    WhipRemote:FireServer(tempTool, targetChar, dir)
+                    -- [السر الحقيقي للأمان والسرعة]
+                    WhipRemote:FireServer(tempTool) -- تهيئة الأداة أولاً في السيرفر لعدم كشفها كسبام
+                    WhipRemote:FireServer(tempTool, targetChar, dir) -- تنفيذ أمر الضرب
                 end)
             end  
 
@@ -211,7 +212,7 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
             if speed > 0 then   
                 task.wait(speed)
             else  
-                task.wait() -- الانتظار التلقائي للمحرك لمنع الطرد
+                task.wait() -- الانتظار الأصلي الآمن والمتناسق مع اللعبة
             end  
         end  
     end)  
@@ -231,7 +232,7 @@ local function giveSelectorTool()
     if not backpack then return end  
 
     local tool = Instance.new("Tool")  
-    tool.Name = "تحديد العدو" -- غيرت الاسم لـ "تحديد العدو" مثل الزر اللي بالفيديو  
+    tool.Name = "تحديد العدو"  
     tool.RequiresHandle = false  
     
     tool.Activated:Connect(function()  
