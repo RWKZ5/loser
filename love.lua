@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 
--- تأمين الـ Remote عشان السكربت ما يوقف لو ما لقاه
+-- تأمين الـ Remote لمنع أي أخطاء قاتلة
 local WhipRemote = nil
 pcall(function()
     if RS:FindFirstChild("7lb") then
@@ -198,13 +198,11 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
             tempTool.Parent = myChar    
 
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
-            if targetChar and targetChar.Parent then  
-                if WhipRemote then
-                    WhipRemote:FireServer(tempTool)  
+            if targetChar and targetChar.Parent and WhipRemote then  
+                -- نظام إرسال محمي وآمن لمنع الحماية من طردك
+                pcall(function()
                     WhipRemote:FireServer(tempTool, targetChar, dir)
-                else
-                    warn("⚠️ تنبيه: أداة السوط (Remote) غير موجودة في هذه اللعبة!")
-                end  
+                end)
             end  
 
             tempTool:Destroy()  
@@ -212,7 +210,8 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
             if speed > 0 then   
                 task.wait(speed)
             else  
-                task.wait()  
+                -- حماية لمنع السبام القاتل والطرد التلقائي
+                task.wait(0.02)  
             end  
         end  
     end)  
@@ -326,3 +325,4 @@ TrackBtn.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
     TrackBtn.Text = trackingEnabled and "التعقب: ON" or "التعقب: OFF"
 end)
+
