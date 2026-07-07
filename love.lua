@@ -11,121 +11,95 @@ pcall(function()
 end)
 
 -- ============================================
--- [ UI Setup ]
+-- [ تصميم واجهة جديد ومطور - UI Redesign ]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WhipCuffsBypass"
+ScreenGui.Name = "WhipNexusV3" -- اسم جديد تماماً لتجنب الكاش
 ScreenGui.Parent = game:GetService("CoreGui") 
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 220, 0, 260)
-Frame.Position = UDim2.new(0.5, -110, 0.5, -130)
-Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Frame.BackgroundTransparency = 0.5
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 14)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 240, 0, 280)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -140)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25) -- لون خلفية جديد (كحلي داكن)
+MainFrame.BackgroundTransparency = 0.2
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 26)
-Title.Position = UDim2.new(0, 0, 0, 2)
-Title.BackgroundTransparency = 1
-Title.Text = "وابل السوط وثغرة الكلبشة"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 13
-Title.TextXAlignment = Enum.TextXAlignment.Center
+-- إضافة إطار جمالي (Stroke) للواجهة الجديدة
+local FrameStroke = Instance.new("UIStroke", MainFrame)
+FrameStroke.Color = Color3.fromRGB(0, 170, 255) -- حواف زرقاء مضيئة للتأكد من التغيير
+FrameStroke.Thickness = 1.5
 
-local Divider = Instance.new("Frame", Frame)
-Divider.Size = UDim2.new(1, 0, 0, 2)
-Divider.Position = UDim2.new(0, 0, 0, 30)
-Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-Divider.BackgroundTransparency = 0.6
+local HeaderTitle = Instance.new("TextLabel", MainFrame)
+HeaderTitle.Size = UDim2.new(1, 0, 0, 35)
+HeaderTitle.Position = UDim2.new(0, 0, 0, 0)
+HeaderTitle.BackgroundTransparency = 1
+HeaderTitle.Text = "NEXUS WHIP - V3"
+HeaderTitle.TextColor3 = Color3.fromRGB(0, 170, 255)
+HeaderTitle.Font = Enum.Font.GothamBold
+HeaderTitle.TextSize = 14
+HeaderTitle.TextXAlignment = Enum.TextXAlignment.Center
 
-local CountBox = Instance.new("TextBox", Frame)
-CountBox.Size = UDim2.new(0, 180, 0, 28)
-CountBox.Position = UDim2.new(0.5, -90, 0, 40)
-CountBox.PlaceholderText = "عدد الضربات"
-CountBox.Text = "50000"
-CountBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-CountBox.BackgroundTransparency = 0.4
-CountBox.TextColor3 = Color3.new(1, 1, 1)
-CountBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
-CountBox.Font = Enum.Font.Gotham
-CountBox.TextSize = 12
-CountBox.ClearTextOnFocus = false
-Instance.new("UICorner", CountBox).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", CountBox).Color = Color3.fromRGB(180, 180, 180)
+local TargetInput = Instance.new("TextBox", MainFrame)
+TargetInput.Size = UDim2.new(0, 200, 0, 30)
+TargetInput.Position = UDim2.new(0.5, -100, 0, 45)
+TargetInput.PlaceholderText = "اسم الهدف (3 حروف أو أكثر)"
+TargetInput.Text = ""
+TargetInput.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+TargetInput.TextColor3 = Color3.new(1, 1, 1)
+TargetInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+TargetInput.Font = Enum.Font.Gotham
+TargetInput.TextSize = 12
+TargetInput.ClearTextOnFocus = false
+Instance.new("UICorner", TargetInput).CornerRadius = UDim.new(0, 6)
 
-local SpeedBox = Instance.new("TextBox", Frame)
-SpeedBox.Size = UDim2.new(0, 180, 0, 28)
-SpeedBox.Position = UDim2.new(0.5, -90, 0, 72)
-SpeedBox.PlaceholderText = "سرعة الضربات (0 = فوري)"
-SpeedBox.Text = "0"
-SpeedBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-SpeedBox.BackgroundTransparency = 0.4
-SpeedBox.TextColor3 = Color3.new(1, 1, 1)
-SpeedBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
-SpeedBox.Font = Enum.Font.Gotham
-SpeedBox.TextSize = 12
-SpeedBox.ClearTextOnFocus = false
-Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", SpeedBox).Color = Color3.fromRGB(180, 180, 180)
+local AttackCount = Instance.new("TextBox", MainFrame)
+AttackCount.Size = UDim2.new(0, 200, 0, 30)
+AttackCount.Position = UDim2.new(0.5, -100, 0, 85)
+AttackCount.PlaceholderText = "عدد الضربات"
+AttackCount.Text = "5000"
+AttackCount.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+AttackCount.TextColor3 = Color3.new(1, 1, 1)
+AttackCount.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+AttackCount.Font = Enum.Font.Gotham
+AttackCount.TextSize = 12
+AttackCount.ClearTextOnFocus = false
+Instance.new("UICorner", AttackCount).CornerRadius = UDim.new(0, 6)
 
-local DistBox = Instance.new("TextBox", Frame)
-DistBox.Size = UDim2.new(0, 180, 0, 28)  
-DistBox.Position = UDim2.new(0.5, -90, 0, 104) 
-DistBox.PlaceholderText = "مسافة التتبع (0 = داخل الهدف)"
-DistBox.Text = "0"
-DistBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-DistBox.BackgroundTransparency = 0.4
-DistBox.TextColor3 = Color3.new(1, 1, 1)
-DistBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
-DistBox.Font = Enum.Font.Gotham
-DistBox.TextSize = 12
-DistBox.ClearTextOnFocus = false
-Instance.new("UICorner", DistBox).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", DistBox).Color = Color3.fromRGB(180, 180, 180)
+local CustomDelay = Instance.new("TextBox", MainFrame)
+CustomDelay.Size = UDim2.new(0, 200, 0, 30)
+CustomDelay.Position = UDim2.new(0.5, -100, 0, 125)
+CustomDelay.PlaceholderText = "تأخير الأمان (افتراضي: 0.1)"
+CustomDelay.Text = "0.1" -- قيمة افتراضية آمنة لتجنب طرد الحماية الفوري
+CustomDelay.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+CustomDelay.TextColor3 = Color3.new(1, 1, 1)
+CustomDelay.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+CustomDelay.Font = Enum.Font.Gotham
+CustomDelay.TextSize = 12
+CustomDelay.ClearTextOnFocus = false
+Instance.new("UICorner", CustomDelay).CornerRadius = UDim.new(0, 6)
 
-local NameBox = Instance.new("TextBox", Frame)
-NameBox.Size = UDim2.new(0, 180, 0, 28)
-NameBox.Position = UDim2.new(0.5, -90, 0, 136) 
-NameBox.PlaceholderText = "الاسم كامل أو أول 3 حروف"
-NameBox.Text = ""
-NameBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-NameBox.BackgroundTransparency = 0.4
-NameBox.TextColor3 = Color3.new(1, 1, 1)
-NameBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
-NameBox.Font = Enum.Font.Gotham
-NameBox.TextSize = 12
-NameBox.ClearTextOnFocus = false
-Instance.new("UICorner", NameBox).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", NameBox).Color = Color3.fromRGB(180, 180, 180)
+local ActionButton = Instance.new("TextButton", MainFrame)
+ActionButton.Size = UDim2.new(0, 200, 0, 35)
+ActionButton.Position = UDim2.new(0.5, -100, 0, 170)
+ActionButton.Text = "بدء الهجوم المطور"
+ActionButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+ActionButton.TextColor3 = Color3.new(1, 1, 1)
+ActionButton.Font = Enum.Font.GothamBold
+ActionButton.TextSize = 13
+Instance.new("UICorner", ActionButton).CornerRadius = UDim.new(0, 6)
 
-local FireBtn = Instance.new("TextButton", Frame)
-FireBtn.Size = UDim2.new(0, 180, 0, 30)
-FireBtn.Position = UDim2.new(0.5, -90, 0, 170)
-FireBtn.Text = "أطلق وابل السوط"
-FireBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-FireBtn.BackgroundTransparency = 0.7
-FireBtn.TextColor3 = Color3.new(1, 1, 1)
-FireBtn.Font = Enum.Font.GothamBold
-FireBtn.TextSize = 12
-Instance.new("UICorner", FireBtn).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", FireBtn).Color = Color3.fromRGB(180, 180, 180)
-
-local TrackBtn = Instance.new("TextButton", Frame)
-TrackBtn.Size = UDim2.new(0, 180, 0, 30)
-TrackBtn.Position = UDim2.new(0.5, -90, 0, 206)
-TrackBtn.Text = "التعقب : OFF"
-TrackBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-TrackBtn.BackgroundTransparency = 0.7
-TrackBtn.TextColor3 = Color3.new(1, 1, 1)
-TrackBtn.Font = Enum.Font.GothamBold
-TrackBtn.TextSize = 12
-Instance.new("UICorner", TrackBtn).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", TrackBtn).Color = Color3.fromRGB(180, 180, 180)
+local ToggleTrack = Instance.new("TextButton", MainFrame)
+ToggleTrack.Size = UDim2.new(0, 200, 0, 35)
+ToggleTrack.Position = UDim2.new(0.5, -100, 0, 215)
+ToggleTrack.Text = "حالة التتبع: معطل"
+ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+ToggleTrack.TextColor3 = Color3.new(1, 1, 1)
+ToggleTrack.Font = Enum.Font.GothamBold
+ToggleTrack.TextSize = 12
+Instance.new("UICorner", ToggleTrack).CornerRadius = UDim.new(0, 6)
 
 -- ============================================
 -- [ States ]
@@ -142,13 +116,11 @@ local currentSelectorTool = nil
 local function getPlayerByName(name)
     local lower = name:lower():gsub(" ", "")
     if #lower < 3 then return nil end
-    
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Name:lower():gsub(" ", "") == lower then
             return plr
         end
     end
-    
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Name:lower():gsub(" ", ""):sub(1, #lower) == lower then
             return plr
@@ -157,26 +129,7 @@ local function getPlayerByName(name)
     return nil
 end
 
--- دالة البحث عن أداة الكلبشة الحقيقية في حقيبتك أو يدك لتجاوز فحص السيرفر
-local function findHandcuffs()
-    local char = LocalPlayer.Character
-    if char then
-        -- البحث في اليد أولاً
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool and (tool.Name:lower():find("cuff") or tool.Name:find("كلبش")) then
-            return tool
-        end
-        -- البحث في الحقيبة
-        for _, t in ipairs(LocalPlayer.Backpack:GetChildren()) do
-            if t:IsA("Tool") and (t.Name:lower():find("cuff") or t.Name:find("كلبش")) then
-                return t
-            end
-        end
-    end
-    return nil
-end
-
-local function whipBarrage(targetPlayer, count, track, distance, speed)
+local function executeWhipAttack(targetPlayer, count, track, delayTime)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
     
@@ -186,49 +139,39 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
     local myRoot = myChar.HumanoidRootPart  
     local targetRoot = targetChar.HumanoidRootPart  
 
-    -- البحث عن أداة الكلبشة الحقيقية في حسابك للاعتماد عليها
-    local cuffsTool = findHandcuffs()
-    if not cuffsTool then
-        -- إذا لم يجدها، يبحث عن أول أداة حقيقية بالحقيبة كخيار احتياطي
+    savedCFrame = myRoot.CFrame  
+    myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 0)     
+    task.wait(0.1)  
+
+    attackThread = task.spawn(function()
+        -- محاولة جلب أي أداة حقيقية كخطوة احترازية للتحقق
+        local weapon = nil
         for _, t in ipairs(LocalPlayer.Backpack:GetChildren()) do
             if t:IsA("Tool") and t.Name ~= "تحديد العدو" then
-                cuffsTool = t
+                weapon = t
                 break
             end
         end
-    end
 
-    savedCFrame = myRoot.CFrame  
-    myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, distance)     
-    task.wait()  
-
-    attackThread = task.spawn(function()
         for i = 1, count do  
             if not attackActive then break end  
 
             if track and targetRoot and targetRoot.Parent then  
-                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, distance)     
+                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 0)     
             end  
 
             if not myChar or not myChar.Parent or not myRoot or not myRoot.Parent then break end          
 
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
-            if targetChar and targetChar.Parent and WhipRemote and cuffsTool then  
+            if targetChar and targetChar.Parent and WhipRemote then  
                 pcall(function()
-                    -- [الخدعة العبقرية] السيرفر يشوف أداة كلبشة حقيقية يملكها اللاعب فيمرر الضربة فوراً بدون طرد!
-                    WhipRemote:FireServer(cuffsTool, targetChar, dir)
+                    WhipRemote:FireServer(weapon, targetChar, dir)
                 end)
             end  
               
-            if speed > 0 then   
-                task.wait(speed)
-            else  
-                -- انتظار ميكرو ثانية آمن لمنع حماية سبام الطلبات
-                task.wait(0.01)  
-            end  
+            task.wait(delayTime)  
         end  
     end)  
-
     return true
 end
 
@@ -239,7 +182,6 @@ local function giveSelectorTool()
     if currentSelectorTool and currentSelectorTool.Parent then
         currentSelectorTool:Destroy()
     end
-
     local backpack = LocalPlayer:FindFirstChild("Backpack")  
     if not backpack then return end  
 
@@ -251,28 +193,16 @@ local function giveSelectorTool()
         local mouse = LocalPlayer:GetMouse()  
         local target = mouse.Target  
         if not target then return end  
-        
         local char = target:FindFirstAncestorWhichIsA("Model")  
         if char then  
             local plr = Players:GetPlayerFromCharacter(char)  
             if plr and plr ~= LocalPlayer then  
-                NameBox.Text = plr.Name   
+                TargetInput.Text = plr.Name   
             end  
         end  
     end)  
-    
     tool.Parent = backpack  
     currentSelectorTool = tool  
-
-    task.spawn(function()  
-        local char = LocalPlayer.Character  
-        if not char then return end  
-        local humanoid = char:FindFirstChildOfClass("Humanoid")  
-        if humanoid and currentSelectorTool then  
-            task.wait(0.1)  
-            humanoid:EquipTool(currentSelectorTool)  
-        end  
-    end)
 end
 
 LocalPlayer.CharacterAdded:Connect(function()
@@ -284,53 +214,46 @@ giveSelectorTool()
 -- ============================================
 -- [ UI Listeners ]
 -- ============================================
-FireBtn.MouseButton1Click:Connect(function()
+ActionButton.MouseButton1Click:Connect(function()
     if attackActive then
         attackActive = false
         if attackThread then 
             task.cancel(attackThread)
             attackThread = nil 
         end
-
         local myChar = LocalPlayer.Character  
         local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")  
         if myRoot and savedCFrame then 
             myRoot.CFrame = savedCFrame     
         end
-
-        FireBtn.Text = "أطلق وابل السوط"  
-        task.wait(0.1)  
-        giveSelectorTool()  
+        ActionButton.Text = "بدء الهجوم المطور"  
+        ActionButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
         return  
     end  
 
-    local nameInput = NameBox.Text  
-    if #nameInput < 3 then 
-        warn("⚠️ اكتب 3 حروف على الأقل") 
-        return 
-    end  
+    local nameInput = TargetInput.Text  
+    if #nameInput < 3 then return end  
     
     local target = getPlayerByName(nameInput)  
-    if not target then 
-        warn("❌ لا يوجد لاعب بهذا الاسم") 
-        return 
-    end   
+    if not target then return end   
 
-    local count = tonumber(CountBox.Text) or 50000  
-    if count <= 0 then count = 50000 end  
-
-    local distance = tonumber(DistBox.Text) or 0   
-    if distance < 0 then distance = 0 end  
-
-    local speed = tonumber(SpeedBox.Text) or 0  
-    if speed < 0 then speed = 0 end  
+    local count = tonumber(AttackCount.Text) or 5000  
+    local delayTime = tonumber(CustomDelay.Text) or 0.1  
 
     attackActive = true  
-    whipBarrage(target, count, trackingEnabled, distance, speed)  
-    FireBtn.Text = "إيقاف الوابل"
+    executeWhipAttack(target, count, trackingEnabled, delayTime)  
+    ActionButton.Text = "إيقاف الهجوم"
+    ActionButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 end)
 
-TrackBtn.MouseButton1Click:Connect(function()
+ToggleTrack.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
-    TrackBtn.Text = trackingEnabled and "التعقب : ON" or "التعقب : OFF"
+    if trackingEnabled then
+        ToggleTrack.Text = "حالة التتبع: مفعل"
+        ToggleTrack.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+    else
+        ToggleTrack.Text = "حالة التتبع: معطل"
+        ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    end
 end)
+
