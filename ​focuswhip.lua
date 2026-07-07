@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 
--- تأمين الـ Remote
+-- تأمين الـ Remote الأصلي من السكربت الأول
 local WhipRemote = nil
 pcall(function()
     if RS:FindFirstChild("7lb") then
@@ -11,10 +11,10 @@ pcall(function()
 end)
 
 -- ============================================
--- [ تصميم الواجهة ]
+-- [ تصميم الواجهة المحدثة مع زر التصغير ]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WhipNexusV5"
+ScreenGui.Name = "WhipFocusV6"
 ScreenGui.Parent = game:GetService("CoreGui") 
 
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -35,7 +35,7 @@ local HeaderTitle = Instance.new("TextLabel", MainFrame)
 HeaderTitle.Size = UDim2.new(1, -40, 0, 35)
 HeaderTitle.Position = UDim2.new(0, 10, 0, 0)
 HeaderTitle.BackgroundTransparency = 1
-HeaderTitle.Text = "POWER WHIP - V5"
+HeaderTitle.Text = "FOCUS WHIP - سحب وتتبع"
 HeaderTitle.TextColor3 = Color3.fromRGB(0, 170, 255)
 HeaderTitle.Font = Enum.Font.GothamBold
 HeaderTitle.TextSize = 13
@@ -79,8 +79,8 @@ Instance.new("UICorner", TargetInput).CornerRadius = UDim.new(0, 6)
 local PowerInput = Instance.new("TextBox", MainFrame)
 PowerInput.Size = UDim2.new(0, 200, 0, 32)
 PowerInput.Position = UDim2.new(0.5, -100, 0, 90)
-PowerInput.PlaceholderText = "قوة الطيران (جرّب 500 أو 1000)"
-PowerInput.Text = "500" -- رفعنا القيمة الافتراضية للتأكد من الدفع
+PowerInput.PlaceholderText = "عدد الضربات الفورية"
+PowerInput.Text = "100"
 PowerInput.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 PowerInput.TextColor3 = Color3.new(1, 1, 1)
 PowerInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
@@ -92,7 +92,7 @@ Instance.new("UICorner", PowerInput).CornerRadius = UDim.new(0, 6)
 local ActionButton = Instance.new("TextButton", MainFrame)
 ActionButton.Size = UDim2.new(0, 200, 0, 40)
 ActionButton.Position = UDim2.new(0.5, -100, 0, 145)
-ActionButton.Text = "إطلاق الضربة القاضية 💥"
+ActionButton.Text = "إطلاق السوط والجلد 💥"
 ActionButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
 ActionButton.TextColor3 = Color3.new(1, 1, 1)
 ActionButton.Font = Enum.Font.GothamBold
@@ -102,7 +102,7 @@ Instance.new("UICorner", ActionButton).CornerRadius = UDim.new(0, 6)
 local ToggleTrack = Instance.new("TextButton", MainFrame)
 ToggleTrack.Size = UDim2.new(0, 200, 0, 30)
 ToggleTrack.Position = UDim2.new(0.5, -100, 0, 195)
-ToggleTrack.Text = "حالة الانتقال للهدف: معطل"
+ToggleTrack.Text = "التتبع المستمر: معطل"
 ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
 ToggleTrack.TextColor3 = Color3.new(1, 1, 1)
 ToggleTrack.Font = Enum.Font.GothamBold
@@ -110,9 +110,9 @@ ToggleTrack.TextSize = 11
 Instance.new("UICorner", ToggleTrack).CornerRadius = UDim.new(0, 6)
 
 -- ============================================
--- [ منطق السكربت المطور ]
+-- [ منطق السكربت الأصلي المعدل ]
 -- ============================================
-local teleportToTarget = false
+local trackingEnabled = false
 local savedCFrame = nil
 local currentSelectorTool = nil
 
@@ -132,7 +132,7 @@ local function getPlayerByName(name)
     return nil
 end
 
-local function launchSingleHit(targetPlayer, powerValue)
+local function executeOriginalWhip(targetPlayer, count)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return end
     
@@ -142,34 +142,43 @@ local function launchSingleHit(targetPlayer, powerValue)
     local myRoot = myChar.HumanoidRootPart  
     local targetRoot = targetChar.HumanoidRootPart  
 
-    if teleportToTarget then
-        savedCFrame = myRoot.CFrame  
-        myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)     
-        task.wait(0.05)
-    end
-
-    local weapon = nil
-    for _, t in ipairs(LocalPlayer.Backpack:GetChildren()) do
-        if t:IsA("Tool") and t.Name ~= "تحديد العدو" then
-            weapon = t
-            break
-        end
-    end
-
-    -- [تحديث طريقة الدفع] حساب اتجاه الدفع للأمام وللأعلى بناءً على زاوية نظرك ونظر الهدف
-    local lookDirection = myRoot.CFrame.LookVector
-    local dir = (lookDirection + Vector3.new(0, 0.5, 0)).Unit * powerValue 
+    -- حفظ مكانك الحالي قبل الانتقال للهدف
+    savedCFrame = myRoot.CFrame  
     
-    if WhipRemote then
-        pcall(function()
-            WhipRemote:FireServer(weapon, targetChar, dir)
-        end)
+    -- [انتقال فوري عند الإطلاق] ينقلك للهدف مباشرة لضمان نجاح حركة الجلد
+    myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)     
+    task.wait(0.05)
+
+    -- إعادة كود الأداة وحركة الجلد الأصلية من السكربت الأول لضمان طيران الهدف
+    local fakeTool = Instance.new("Tool")
+    fakeTool.Name = "1"
+    fakeTool.RequiresHandle = false
+    fakeTool.Parent = myChar
+
+    -- إرسال الضربات دفعة واحدة بالصياغة الأصلية
+    for i = 1, count do
+        -- إذا كان التتبع المستمر مفعلاً، يستمر في اللحاق به، وإلا يكتفي بالانتقالة الأولى فقط
+        if trackingEnabled and targetRoot and targetRoot.Parent then
+            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
+        end
+
+        local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)
+        if targetChar and targetChar.Parent and WhipRemote then
+            pcall(function()
+                WhipRemote:FireServer(fakeTool, targetChar, dir)
+            end)
+        end
+        task.wait(0.01) -- تأخير ميكرو ثانية لضمان الفعالية وعدم إسقاط الأوامر
     end
 
-    if teleportToTarget and savedCFrame then
-        task.wait(0.1)
+    -- إرجاعك لمكانك القديم فوراً بعد انتهاء الضربات ومستحيل تنتقل له ثاني إلا لو ضغطت الزر مرة أخرى
+    if not trackingEnabled and savedCFrame then
+        task.wait(0.05)
         myRoot.CFrame = savedCFrame
     end
+
+    -- تنظيف الأداة الوهمية بعد الاستخدام
+    if fakeTool then fakeTool:Destroy() end
 end
 
 -- ============================================
@@ -228,17 +237,17 @@ ActionButton.MouseButton1Click:Connect(function()
     local target = getPlayerByName(nameInput)  
     if not target then return end   
 
-    local powerValue = tonumber(PowerInput.Text) or 500
-    launchSingleHit(target, powerValue)
+    local count = tonumber(PowerInput.Text) or 100
+    executeOriginalWhip(target, count)
 end)
 
 ToggleTrack.MouseButton1Click:Connect(function()
-    teleportToTarget = not teleportToTarget
-    if teleportToTarget then
-        ToggleTrack.Text = "حالة الانتقال للهدف: مفعل"
+    trackingEnabled = not trackingEnabled
+    if trackingEnabled then
+        ToggleTrack.Text = "التتبع المستمر: مفعل"
         ToggleTrack.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
     else
-        ToggleTrack.Text = "حالة الانتقال للهدف: معطل"
+        ToggleTrack.Text = "التتبع المستمر: معطل"
         ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
     end
 end)
