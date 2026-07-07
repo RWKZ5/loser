@@ -182,6 +182,13 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
     myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, distance)     
     task.wait()  
 
+    -- [تعديل الحماية الحاسم]: إنشاء أداة واحدة ثابتة خارج الحلقة لمنع سبام الـ Instances والطرد
+    local mainTool = Instance.new("Tool")  
+    mainTool.Name = "1"    
+    mainTool.RequiresHandle = false   
+    mainTool.Parent = myChar
+    table.insert(activeTools, mainTool)
+
     attackThread = task.spawn(function()
         for i = 1, count do  
             if not attackActive then break end  
@@ -192,28 +199,21 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
 
             if not myChar or not myChar.Parent or not myRoot or not myRoot.Parent then break end          
 
-            local tempTool = Instance.new("Tool")  
-            tempTool.Name = "1"    
-            tempTool.RequiresHandle = false   
-            tempTool.Parent = myChar    
-
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
             if targetChar and targetChar.Parent and WhipRemote then  
-                -- نظام إرسال محمي وآمن لمنع الحماية من طردك
                 pcall(function()
-                    WhipRemote:FireServer(tempTool, targetChar, dir)
+                    WhipRemote:FireServer(mainTool, targetChar, dir)
                 end)
             end  
-
-            tempTool:Destroy()  
               
             if speed > 0 then   
                 task.wait(speed)
             else  
-                -- حماية لمنع السبام القاتل والطرد التلقائي
-                task.wait(0.02)  
+                -- انتظار افتراضي ممتص للصدمات وآمن من الـ Anti-Cheat
+                task.wait()  
             end  
-        end  
+        end
+        if mainTool then mainTool:Destroy() end
     end)  
 
     return true
@@ -325,4 +325,3 @@ TrackBtn.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
     TrackBtn.Text = trackingEnabled and "التعقب: ON" or "التعقب: OFF"
 end)
-
