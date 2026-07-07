@@ -1,7 +1,14 @@
-herelocal Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
-local WhipRemote = RS:FindFirstChild("7lb") and RS["7lb"].Tools.Whip.Init
+
+-- تأمين الـ Remote عشان السكربت ما يوقف لو ما لقاه
+local WhipRemote = nil
+pcall(function()
+    if RS:FindFirstChild("7lb") then
+        WhipRemote = RS["7lb"].Tools.Whip.Init
+    end
+end)
 
 -- ============================================
 -- [ UI Setup ]
@@ -28,7 +35,7 @@ Title.Text = "وابل السوط – إيقاف = عودة"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
-Title.XAlignment = Enum.TextXAlignment.Center
+Title.TextXAlignment = Enum.TextXAlignment.Center
 
 local Divider = Instance.new("Frame", Frame)
 Divider.Size = UDim2.new(1, 0, 0, 2)
@@ -67,8 +74,8 @@ Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", SpeedBox).Color = Color3.fromRGB(180, 180, 180)
 
 local DistBox = Instance.new("TextBox", Frame)
-DistBox.Size = UDim2.new(0, 180, 0, 28)  -- هنا تم تعديل الحجم إلى 28 ليناسب البقية
-DistBox.Position = UDim2.new(0.5, -90, 0, 104) -- الموضع الصحيح بالترتيب
+DistBox.Size = UDim2.new(0, 180, 0, 28)  
+DistBox.Position = UDim2.new(0.5, -90, 0, 104) 
 DistBox.PlaceholderText = "مسافة التتبع (0 = داخل الهدف)"
 DistBox.Text = "0"
 DistBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -83,7 +90,7 @@ Instance.new("UIStroke", DistBox).Color = Color3.fromRGB(180, 180, 180)
 
 local NameBox = Instance.new("TextBox", Frame)
 NameBox.Size = UDim2.new(0, 180, 0, 28)
-NameBox.Position = UDim2.new(0.5, -90, 0, 136) -- تم ضبط الموضع هنا أيضاً بعد الـ DistBox مباشرة
+NameBox.Position = UDim2.new(0.5, -90, 0, 136) 
 NameBox.PlaceholderText = "الاسم كامل أو أول 3 حروف"
 NameBox.Text = ""
 NameBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -195,6 +202,8 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
                 if WhipRemote then
                     WhipRemote:FireServer(tempTool)  
                     WhipRemote:FireServer(tempTool, targetChar, dir)
+                else
+                    warn("⚠️ تنبيه: أداة السوط (Remote) غير موجودة في هذه اللعبة!")
                 end  
             end  
 
