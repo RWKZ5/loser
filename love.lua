@@ -14,7 +14,7 @@ end)
 -- [ UI Setup ]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WhipFinal"
+ScreenGui.Name = "WhipCuffsBypass"
 ScreenGui.Parent = game:GetService("CoreGui") 
 
 local Frame = Instance.new("Frame", ScreenGui)
@@ -31,7 +31,7 @@ local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1, 0, 0, 26)
 Title.Position = UDim2.new(0, 0, 0, 2)
 Title.BackgroundTransparency = 1
-Title.Text = "وابل السوط – إيقاف = عودة"
+Title.Text = "وابل السوط وثغرة الكلبشة"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -133,7 +133,6 @@ Instance.new("UIStroke", TrackBtn).Color = Color3.fromRGB(180, 180, 180)
 local trackingEnabled = false
 local attackActive = false
 local attackThread = nil
-local activeTools = {}
 local savedCFrame = nil
 local currentSelectorTool = nil
 
@@ -158,16 +157,25 @@ local function getPlayerByName(name)
     return nil
 end
 
-local function clearAllTools()
-    for _, tool in ipairs(activeTools) do
-        if tool and tool.Parent then
-            tool:Destroy()
+-- دالة البحث عن أداة الكلبشة الحقيقية في حقيبتك أو يدك لتجاوز فحص السيرفر
+local function findHandcuffs()
+    local char = LocalPlayer.Character
+    if char then
+        -- البحث في اليد أولاً
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool and (tool.Name:lower():find("cuff") or tool.Name:find("كلبش")) then
+            return tool
+        end
+        -- البحث في الحقيبة
+        for _, t in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if t:IsA("Tool") and (t.Name:lower():find("cuff") or t.Name:find("كلبش")) then
+                return t
+            end
         end
     end
-    activeTools = {}
+    return nil
 end
 
--- [تطابق حرفي 100% مع الصورة القديمة والناجحة]
 local function whipBarrage(targetPlayer, count, track, distance, speed)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
@@ -177,6 +185,18 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
 
     local myRoot = myChar.HumanoidRootPart  
     local targetRoot = targetChar.HumanoidRootPart  
+
+    -- البحث عن أداة الكلبشة الحقيقية في حسابك للاعتماد عليها
+    local cuffsTool = findHandcuffs()
+    if not cuffsTool then
+        -- إذا لم يجدها، يبحث عن أول أداة حقيقية بالحقيبة كخيار احتياطي
+        for _, t in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if t:IsA("Tool") and t.Name ~= "تحديد العدو" then
+                cuffsTool = t
+                break
+            end
+        end
+    end
 
     savedCFrame = myRoot.CFrame  
     myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, distance)     
@@ -192,26 +212,19 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
 
             if not myChar or not myChar.Parent or not myRoot or not myRoot.Parent then break end          
 
-            local tempTool = Instance.new("Tool")  
-            tempTool.Name = "1"    
-            tempTool.RequiresHandle = false   
-            tempTool.Parent = myChar    
-            table.insert(activeTools, tempTool)
-
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
-            if targetChar and targetChar.Parent and WhipRemote then  
+            if targetChar and targetChar.Parent and WhipRemote and cuffsTool then  
                 pcall(function()
-                    WhipRemote:FireServer(tempTool)  
-                    WhipRemote:FireServer(tempTool, targetChar, dir)
+                    -- [الخدعة العبقرية] السيرفر يشوف أداة كلبشة حقيقية يملكها اللاعب فيمرر الضربة فوراً بدون طرد!
+                    WhipRemote:FireServer(cuffsTool, targetChar, dir)
                 end)
             end  
-
-            tempTool:Destroy()  -- الحذف الفوري داخل اللوب كالصورة تماماً
               
             if speed > 0 then   
                 task.wait(speed)
             else  
-                task.wait() -- العودة لـ task.wait التلقائية والآمنة التي كانت في صورتك
+                -- انتظار ميكرو ثانية آمن لمنع حماية سبام الطلبات
+                task.wait(0.01)  
             end  
         end  
     end)  
@@ -278,7 +291,6 @@ FireBtn.MouseButton1Click:Connect(function()
             task.cancel(attackThread)
             attackThread = nil 
         end
-        clearAllTools()
 
         local myChar = LocalPlayer.Character  
         local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")  
@@ -322,4 +334,3 @@ TrackBtn.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
     TrackBtn.Text = trackingEnabled and "التعقب : ON" or "التعقب : OFF"
 end)
-
