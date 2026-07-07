@@ -14,7 +14,7 @@ end)
 -- [ UI Setup ]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WhipBypass"
+ScreenGui.Name = "WhipFinal"
 ScreenGui.Parent = game:GetService("CoreGui") 
 
 local Frame = Instance.new("Frame", ScreenGui)
@@ -31,7 +31,7 @@ local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1, 0, 0, 26)
 Title.Position = UDim2.new(0, 0, 0, 2)
 Title.BackgroundTransparency = 1
-Title.Text = "وابل السوط – مضاد الطرد"
+Title.Text = "وابل السوط – إيقاف = عودة"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -61,7 +61,7 @@ Instance.new("UIStroke", CountBox).Color = Color3.fromRGB(180, 180, 180)
 local SpeedBox = Instance.new("TextBox", Frame)
 SpeedBox.Size = UDim2.new(0, 180, 0, 28)
 SpeedBox.Position = UDim2.new(0.5, -90, 0, 72)
-SpeedBox.PlaceholderText = "سرعة الضربات (0 = فوري آمن)"
+SpeedBox.PlaceholderText = "سرعة الضربات (0 = فوري)"
 SpeedBox.Text = "0"
 SpeedBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 SpeedBox.BackgroundTransparency = 0.4
@@ -167,7 +167,7 @@ local function clearAllTools()
     activeTools = {}
 end
 
--- دالة الجلد الذكية المزودة بنظام تخطي حماية السبام (Anti-Spam Bypass)
+-- [تطابق حرفي 100% مع الصورة القديمة والناجحة]
 local function whipBarrage(targetPlayer, count, track, distance, speed)
     local targetChar = targetPlayer.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
@@ -183,19 +183,6 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
     task.wait()  
 
     attackThread = task.spawn(function()
-        local tempTool = Instance.new("Tool")  
-        tempTool.Name = "1"    
-        tempTool.RequiresHandle = false   
-        tempTool.Parent = myChar    
-        table.insert(activeTools, tempTool)
-
-        -- تهيئة الأداة لمرة واحدة بالخارج لتوفير الحماية الإضافية
-        if WhipRemote then
-            pcall(function() WhipRemote:FireServer(tempTool) end)
-        end
-
-        local batchCount = 0 -- عداد لحساب عدد الضربات في الموجة الواحدة
-
         for i = 1, count do  
             if not attackActive then break end  
 
@@ -205,30 +192,28 @@ local function whipBarrage(targetPlayer, count, track, distance, speed)
 
             if not myChar or not myChar.Parent or not myRoot or not myRoot.Parent then break end          
 
+            local tempTool = Instance.new("Tool")  
+            tempTool.Name = "1"    
+            tempTool.RequiresHandle = false   
+            tempTool.Parent = myChar    
+            table.insert(activeTools, tempTool)
+
             local dir = Vector3.new(math.random(-100, 100) / 100, 0, math.random(-100, 100) / 100)  
             if targetChar and targetChar.Parent and WhipRemote then  
                 pcall(function()
+                    WhipRemote:FireServer(tempTool)  
                     WhipRemote:FireServer(tempTool, targetChar, dir)
                 end)
             end  
-            
-            batchCount = batchCount + 1
 
-            -- [تجاوز الحماية الحاسم]: إذا وصلت سرعة الضربات إلى 0 الفورية، نطلقها كموجات (Batches)
+            tempTool:Destroy()  -- الحذف الفوري داخل اللوب كالصورة تماماً
+              
             if speed > 0 then   
                 task.wait(speed)
             else  
-                -- كل 7 ضربات سريعة جداً، نجعل السكربت يرتاح ميكرو ثانية لتخطي الـ Anti-Spam التلقائي للماب
-                if batchCount >= 7 then
-                    task.wait(0.02) -- وقت انتظار آمن يمنع الطرد نهائياً ويحافظ على سرعة الجلد العالية
-                    batchCount = 0
-                else
-                    -- نظام موازنة الإرسال مع فريمات اللعبة التلقائية لعدم إثارة الشبهة
-                    game:GetService("RunService").Heartbeat:Wait()
-                end
+                task.wait() -- العودة لـ task.wait التلقائية والآمنة التي كانت في صورتك
             end  
         end  
-        if tempTool then tempTool:Destroy() end
     end)  
 
     return true
@@ -337,3 +322,4 @@ TrackBtn.MouseButton1Click:Connect(function()
     trackingEnabled = not trackingEnabled
     TrackBtn.Text = trackingEnabled and "التعقب : ON" or "التعقب : OFF"
 end)
+
