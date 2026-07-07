@@ -11,10 +11,10 @@ pcall(function()
 end)
 
 -- ============================================
--- [ تصميم واجهة جديد - تحكم بقوة الضربة وزر التصغير ]
+-- [ تصميم الواجهة ]
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WhipNexusV4"
+ScreenGui.Name = "WhipNexusV5"
 ScreenGui.Parent = game:GetService("CoreGui") 
 
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -35,16 +35,15 @@ local HeaderTitle = Instance.new("TextLabel", MainFrame)
 HeaderTitle.Size = UDim2.new(1, -40, 0, 35)
 HeaderTitle.Position = UDim2.new(0, 10, 0, 0)
 HeaderTitle.BackgroundTransparency = 1
-HeaderTitle.Text = "NEXUS WHIP - V4"
+HeaderTitle.Text = "POWER WHIP - V5"
 HeaderTitle.TextColor3 = Color3.fromRGB(0, 170, 255)
 HeaderTitle.Font = Enum.Font.GothamBold
 HeaderTitle.TextSize = 13
 HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- زر فتح الواجهة بعد تصغيرها (مخفي في البداية)
 local OpenButton = Instance.new("TextButton", ScreenGui)
 OpenButton.Size = UDim2.new(0, 80, 0, 30)
-OpenButton.Position = UDim2.new(0, 10, 0, 10) -- في زاوية الشاشة فوق يسار
+OpenButton.Position = UDim2.new(0, 10, 0, 10)
 OpenButton.Text = "فتح القائمة"
 OpenButton.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 OpenButton.TextColor3 = Color3.fromRGB(0, 170, 255)
@@ -55,7 +54,6 @@ Instance.new("UICorner", OpenButton).CornerRadius = UDim.new(0, 6)
 local OpenStroke = Instance.new("UIStroke", OpenButton)
 OpenStroke.Color = Color3.fromRGB(0, 170, 255)
 
--- زر التصغير [-] داخل الواجهة الرئيسية
 local MinButton = Instance.new("TextButton", MainFrame)
 MinButton.Size = UDim2.new(0, 30, 0, 30)
 MinButton.Position = UDim2.new(1, -35, 0, 2)
@@ -81,8 +79,8 @@ Instance.new("UICorner", TargetInput).CornerRadius = UDim.new(0, 6)
 local PowerInput = Instance.new("TextBox", MainFrame)
 PowerInput.Size = UDim2.new(0, 200, 0, 32)
 PowerInput.Position = UDim2.new(0.5, -100, 0, 90)
-PowerInput.PlaceholderText = "قوة الإطاحة/الطيران (مثلاً: 100)"
-PowerInput.Text = "100"
+PowerInput.PlaceholderText = "قوة الطيران (جرّب 500 أو 1000)"
+PowerInput.Text = "500" -- رفعنا القيمة الافتراضية للتأكد من الدفع
 PowerInput.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 PowerInput.TextColor3 = Color3.new(1, 1, 1)
 PowerInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
@@ -112,7 +110,7 @@ ToggleTrack.TextSize = 11
 Instance.new("UICorner", ToggleTrack).CornerRadius = UDim.new(0, 6)
 
 -- ============================================
--- [ States & Functions ]
+-- [ منطق السكربت المطور ]
 -- ============================================
 local teleportToTarget = false
 local savedCFrame = nil
@@ -158,7 +156,9 @@ local function launchSingleHit(targetPlayer, powerValue)
         end
     end
 
-    local dir = Vector3.new(0, 1, 0) * powerValue 
+    -- [تحديث طريقة الدفع] حساب اتجاه الدفع للأمام وللأعلى بناءً على زاوية نظرك ونظر الهدف
+    local lookDirection = myRoot.CFrame.LookVector
+    local dir = (lookDirection + Vector3.new(0, 0.5, 0)).Unit * powerValue 
     
     if WhipRemote then
         pcall(function()
@@ -173,7 +173,7 @@ local function launchSingleHit(targetPlayer, powerValue)
 end
 
 -- ============================================
--- [ Selector Tool Setup ]
+-- [ أداة التحديد ]
 -- ============================================
 local function giveSelectorTool()
     if currentSelectorTool and currentSelectorTool.Parent then
@@ -209,9 +209,8 @@ end)
 giveSelectorTool()
 
 -- ============================================
--- [ UI Listeners ]
+-- [ أزرار الواجهة ]
 -- ============================================
--- منطق أزرار التصغير والتكبير
 MinButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     OpenButton.Visible = true
@@ -229,7 +228,7 @@ ActionButton.MouseButton1Click:Connect(function()
     local target = getPlayerByName(nameInput)  
     if not target then return end   
 
-    local powerValue = tonumber(PowerInput.Text) or 100
+    local powerValue = tonumber(PowerInput.Text) or 500
     launchSingleHit(target, powerValue)
 end)
 
@@ -243,3 +242,4 @@ ToggleTrack.MouseButton1Click:Connect(function()
         ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
     end
 end)
+
