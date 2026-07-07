@@ -256,4 +256,3 @@ ToggleTrack.MouseButton1Click:Connect(function()
         ToggleTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
     end
 end)
-
