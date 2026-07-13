@@ -162,3 +162,55 @@ end)
 Players.PlayerRemoving:Connect(function(player)
     lastVelocities[player] = nil
 end)
+
+-- ============================================
+-- [ إدراج نظام الرادار المستقل للجوال (إضافة فقط) ]
+-- ============================================
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local RadarFrame = Instance.new("Frame", ScreenGui)
+RadarFrame.Size = UDim2.new(0, 110, 0, 110)
+RadarFrame.Position = UDim2.new(0.05, 0, 0.25, 0) -- يظهر على اليسار بشكل مناسب للشاشة
+RadarFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+RadarFrame.BackgroundTransparency = 0.3
+RadarFrame.Active = true
+RadarFrame.Draggable = true -- يمكنك سحبه بأي مكان بإصبعك
+local Corner = Instance.new("UICorner", RadarFrame)
+Corner.CornerRadius = UDim.new(1, 0) -- تصميم دائري متناسق
+
+local RadarStroke = Instance.new("UIStroke", RadarFrame)
+RadarStroke.Color = Color3.fromRGB(0, 255, 150)
+RadarStroke.Thickness = 1.5
+
+local CenterDot = Instance.new("Frame", RadarFrame)
+CenterDot.Size = UDim2.new(0, 4, 0, 4)
+CenterDot.Position = UDim2.new(0.5, -2, 0.5, -2)
+CenterDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", CenterDot).CornerRadius = UDim.new(1, 0)
+
+local radarDots = {}
+
+RunService.RenderStepped:Connect(function()
+    for _, dot in pairs(radarDots) do dot:Destroy() end
+    radarDots = {}
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Team ~= LocalPlayer.Team then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart") or player.Character:FindFirstChild("Torso")
+            if hrp then
+                local relPos = Camera.CFrame:ToObjectSpace(hrp.CFrame).Position
+                local x = relPos.X * 0.45 
+                local z = relPos.Z * 0.45
+                
+                -- التأكد هندسياً من البقاء داخل الدائرة
+                if (x^2 + z^2) < (50^2) then
+                    local dot = Instance.new("Frame", RadarFrame)
+                    dot.Size = UDim2.new(0, 4, 0, 4)
+                    dot.Position = UDim2.new(0.5, x - 2, 0.5, z - 2)
+                    dot.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- الأعداء باللون الأحمر
+                    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+                    table.insert(radarDots, dot)
+                end
+            end
+        end
+    end
+end)
