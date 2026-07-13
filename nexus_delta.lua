@@ -4,13 +4,14 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- [ الإعدادات المحسنة للسرعة الفورية ]
+-- [ الإعدادات الأساسية ]
 -- ============================================
 local AimbotEnabled = true
-local BulletSpeed = 3500     -- سرعة عالية جداً لجعل التنبؤ فوري ومباشر
-local FOV_Radius = 150       -- حجم دائرة الـ FOV
+local BulletSpeed = 650     -- سرعة الرصاصة (ارفعها لـ 3000+ لو الأسلحة تصيب فوراً Hitscan)
+local Smoothness = 0.08     -- سلاسة التتبع (كل ما قلّ الرقم صار الأيم أسرع وأقوى)
+local FOV_Radius = 150      -- حجم دائرة الـ FOV
 
--- التحقق الآمن من وجود Drawing API
+-- التحقق الآمن من وجود Drawing API لضمان التوافق مع Delta
 local FOVCircle = nil
 if Drawing then
     FOVCircle = Drawing.new("Circle")
@@ -23,7 +24,9 @@ end
 
 local lastVelocities = {}
 
--- [1] فحص الجدران والعوائق
+-- ============================================
+-- [ 1. فحص الجدران والعوائق (Raycast الحديث) ]
+-- ============================================
 local function isPartVisible(targetPart)
     local rayOrigin = Camera.CFrame.Position
     local rayDirection = (targetPart.Position - rayOrigin)
@@ -40,9 +43,12 @@ local function isPartVisible(targetPart)
     return false
 end
 
--- [2] اختيار أفضل جزء مكشوف
+-- ============================================
+-- [ 2. اختيار أفضل جزء مكشوف (R6 + R15 + تصفية الإكسسوارات) ]
+-- ============================================
 local function getBestVisiblePart(character)
-    local preferredParts = {"Head", "UpperTorso", "Torso", "HumanoidRootPart"}
+    -- دعم المشغلات المشتركة لـ R6 و R15 بالترتيب
+    local preferredParts = {"Head", "UpperTorso", "Torso", "HumanoidRootPart", "LowerTorso"}
     
     for _, partName in ipairs(preferredParts) do
         local part = character:FindFirstChild(partName)
@@ -51,6 +57,7 @@ local function getBestVisiblePart(character)
         end
     end
     
+    -- الحل البديل: اختيار الجزء المكشوف الأمثل والأقرب لمركز الشاشة (مع استبعاد القبعات والإكسسوارات)
     local bestAlternativePart = nil
     local shortestDistanceToCenter = math.huge
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -71,7 +78,9 @@ local function getBestVisiblePart(character)
     return bestAlternativePart
 end
 
--- [3] التنبؤ الفيزيائي المستقر
+-- ============================================
+-- [ 3. التنبؤ الفيزيائي المستقر والمطور ]
+-- ============================================
 local function getPredictedTargetPosition(targetPlayer, targetPart, dt)
     local hrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return targetPart.Position end
@@ -85,18 +94,23 @@ local function getPredictedTargetPosition(targetPlayer, targetPart, dt)
     local previousVelocity = lastVelocities[targetPlayer] or currentVelocity
     local safeDeltaTime = math.max(dt, 0.0001)
     
+    -- حساب التسارع اللحظي بناءً على الـ dt الفعلي
     local acceleration = (currentVelocity - previousVelocity) / safeDeltaTime
     lastVelocities[targetPlayer] = currentVelocity
     
+    -- معادلة التنبؤ بالمسار المنحني والمراوغة
     return currentPosition + (currentVelocity * timeToReach) + (0.5 * acceleration * (timeToReach ^ 2))
 end
 
--- [4] جلب اللاعب الأقرب
+-- ============================================
+-- [ 4. جلب اللاعب الأقرب (Raycast خارج الحلقة للأداء العالي) ]
+-- ============================================
 local function getClosestPlayer()
     local closestTarget = nil
     local shortestDistance = FOV_Radius
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
+    -- الفرز السريع بناءً على مسافة الشاشة لتوفير موارد المعالج
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Team ~= LocalPlayer.Team then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
@@ -115,6 +129,7 @@ local function getClosestPlayer()
         end
     end
     
+    -- إطلاق الـ Raycast فقط على اللاعب الأقرب الذي تم اختياره
     if closestTarget then
         local targetPart = getBestVisiblePart(closestTarget.Character)
         if targetPart then
@@ -126,7 +141,7 @@ local function getClosestPlayer()
 end
 
 -- ============================================
--- [ 5. حلقة التحديث الفوري (تم إزالة الـ Lerp تماماً) ]
+-- [ 5. حلقة التحديث المستمرة المتوافقة مع فيزياء روبلوكس ]
 -- ============================================
 RunService.Heartbeat:Connect(function(dt)
     if FOVCircle then
@@ -137,14 +152,13 @@ RunService.Heartbeat:Connect(function(dt)
         local targetPlayer, targetPart = getClosestPlayer()
         if targetPlayer and targetPart then
             local finalTargetPos = getPredictedTargetPosition(targetPlayer, targetPart, dt)
-            
-            -- [ تعديل جوهري ]: الكاميرا الآن تلتفت فوراً وبسرعة 100% بدون أي تأخير أو مظهر بطيء
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, finalTargetPos)
+            -- تحريك الكاميرا بسلاسة فائقة بدون تقطيع
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, finalTargetPos), Smoothness)
         end
     end
 end)
 
+-- تنظيف الذاكرة فور خروج أي لاعب
 Players.PlayerRemoving:Connect(function(player)
     lastVelocities[player] = nil
 end)
-
