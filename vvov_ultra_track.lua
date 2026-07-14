@@ -4,11 +4,11 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- [ الإعدادات الأساسية ]
+-- [ الإعدادات الأساسية - تم تعديل القوة هنا ]
 -- ============================================
 local AimbotEnabled = true
-local BulletSpeed = 650     
-local Smoothness = 0.08     
+local BulletSpeed = 1000     -- تم رفع سرعة الرصاصة لتوقع أسرع وأدق
+local Smoothness = 0.35     -- رفعنا السرعة هنا ليعطي التزام فوري وقفل قوي جداً مثل الفيديو
 local FOV_Radius = 150      
 
 -- التحقق الآمن من وجود Drawing API
@@ -112,7 +112,7 @@ local function getClosestPlayer()
     return nil, nil
 end
 
--- [ 5. حلقة التحديث المستمرة للأيم بوت ]
+-- [ 5. حلقة التحديث المستمرة للأيم بوت بقفل فوري واهتزاز معدوم ]
 RunService.Heartbeat:Connect(function(dt)
     if FOVCircle then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -121,6 +121,7 @@ RunService.Heartbeat:Connect(function(dt)
         local targetPlayer, targetPart = getClosestPlayer()
         if targetPlayer and targetPart then
             local finalTargetPos = getPredictedTargetPosition(targetPlayer, targetPart, dt)
+            -- تم استخدام معادلة Lerp أسرع وأكثر استجابة لالتصاق فوري بالرأس مثل الفيديو تماماً
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, finalTargetPos), Smoothness)
         end
     end
@@ -160,22 +161,18 @@ local function CreateBoxESP(player)
 
     local function ApplyESP(character)
         if not character then return end
-        -- الانتظار لضمان نزول جسم وموقع اللاعب بالكامل في الماب لتلافي مشاكل الجوال
         local hrp = character:WaitForChild("HumanoidRootPart", 10)
         if hrp then
             BoxGui.Parent = hrp
         end
     end
 
-    -- تشغيله على الشخصية الحالية إن وجدت
     if player.Character then
         ApplyESP(player.Character)
     end
     
-    -- الاستماع المستمر لكل مرة يموت فيها اللاعب ويرسبن من جديد
     player.CharacterAdded:Connect(ApplyESP)
 
-    -- تحديث فريم بفريم للمسافات والألوان
     local connection
     connection = RunService.RenderStepped:Connect(function()
         if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -187,9 +184,9 @@ local function CreateBoxESP(player)
             
             local head = player.Character:FindFirstChild("Head")
             if head and isPartVisible(head) then
-                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر مكشوف
+                Stroke.Color = Color3.fromRGB(0, 255, 100)
             else
-                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر خلف جدار
+                Stroke.Color = Color3.fromRGB(255, 50, 50)
             end
         else
             BoxGui:Destroy()
@@ -198,17 +195,14 @@ local function CreateBoxESP(player)
     end)
 end
 
--- تفعيل الكشف وتصفيته للعدو فقط تلقائياً وفورياً
 local function checkAndApply(player)
     if player ~= LocalPlayer then
-        -- دالة مساعدة للتأكد من حالة الفريق
         local function onCharacterReady()
             if player.Team ~= LocalPlayer.Team then
                 CreateBoxESP(player)
             end
         end
         
-        -- تشغيل الكشف للخصم فور دخول شخصيته للماب
         if player.Character then
             onCharacterReady()
         end
@@ -216,10 +210,8 @@ local function checkAndApply(player)
     end
 end
 
--- كشف اللاعبين المتواجدين حالياً بالخادم
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
 
--- كشف أي لاعب جديد ينضم للعبة لاحقاً وبشكل تلقائي فوري!
 Players.PlayerAdded:Connect(checkAndApply)
