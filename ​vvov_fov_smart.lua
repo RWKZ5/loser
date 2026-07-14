@@ -9,13 +9,14 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================================
 local AimbotEnabled = true
 local BulletSpeed = 1000     -- سرعة الرصاصة للتنبؤ الفيزيائي
-local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس
+local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس (تثبيت قوي وسريع)
 local FOV_Radius = 150       -- قطر دائرة الأيم بوت
 
 -- جدول عالمي لتعقب اتصالات ومربعات الـ ESP لكل لاعب ومنع التكرار
 local ActiveESPs = {}
+local lastVelocities = {}
 
--- التحقق الآمن لإنشاء دائرة الـ FOV
+-- [ إنشاء دائرة الـ FOV وإظهارها ]
 local FOVCircle = nil
 if Drawing then
     FOVCircle = Drawing.new("Circle")
@@ -24,9 +25,10 @@ if Drawing then
     FOVCircle.Color = Color3.fromRGB(0, 255, 150)
     FOVCircle.Thickness = 1
     FOVCircle.Filled = false
+else
+    -- تنبيه احتياطي في حال عدم دعم المفسر للرسم
+    warn("Drawing library not supported by your executor!")
 end
-
-local lastVelocities = {}
 
 -- [ فحص الذكاء الاصطناعي للفرق والأصدقاء ]
 local function isValidTarget(player)
@@ -138,11 +140,13 @@ local function getClosestPlayer()
     return nil, nil
 end
 
--- [ 5. حلقة التحديث المستمرة للأيم بوت ]
+-- [ 5. حلقة التحديث المستمرة للأيم بوت والدائرة ]
 RunService.Heartbeat:Connect(function(dt)
+    -- تحديث موقع الدائرة في منتصف الشاشة دائماً
     if FOVCircle then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     end
+    
     if AimbotEnabled then
         local targetPlayer, targetPart = getClosestPlayer()
         if targetPlayer and targetPart then
