@@ -4,14 +4,14 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- [ الإعدادات الأساسية - تم تعديل القوة هنا ]
+-- [ الإعدادات النهائية المستقرة ]
 -- ============================================
 local AimbotEnabled = true
-local BulletSpeed = 1000     -- تم رفع سرعة الرصاصة لتوقع أسرع وأدق
-local Smoothness = 0.35     -- رفعنا السرعة هنا ليعطي التزام فوري وقفل قوي جداً مثل الفيديو
-local FOV_Radius = 150      
+local BulletSpeed = 1000     -- سرعة الرصاصة للتنبؤ الفيزيائي المستقر
+local Smoothness = 0.35      -- قوة تتبع فوري والتصاق ممتاز بالرأس (مثل الفيديو)
+local FOV_Radius = 150       -- حجم نطاق تفعيل الأيم بوت
 
--- التحقق الآمن من وجود Drawing API
+-- التحقق الآمن لإنشاء دائرة الـ FOV
 local FOVCircle = nil
 if Drawing then
     FOVCircle = Drawing.new("Circle")
@@ -24,8 +24,22 @@ end
 
 local lastVelocities = {}
 
+-- دالة ذكية للتحقق التلقائي من الخصوم (تدعم تيم ضد تيم واللعب الفردي FFA تلقائياً)
+local function isEnemy(player)
+    if not player or player == LocalPlayer then return false end
+    
+    -- إذا لم يكن هناك نظام فرق في الماب، أو كان الجميع في فريق واحد (FFA)، يعتبر الجميع أعداء
+    if #game:GetService("Teams"):GetTeams() <= 1 then
+        return true
+    end
+    
+    -- إذا وجد نظام فرق حقيقي، يتم التحقق من اختلاف الفريق
+    return player.Team ~= LocalPlayer.Team
+end
+
 -- [ 1. فحص الجدران والعوائق ]
 local function isPartVisible(targetPart)
+    if not targetPart then return false end
     local rayOrigin = Camera.CFrame.Position
     local rayDirection = (targetPart.Position - rayOrigin)
     local raycastParams = RaycastParams.new()
@@ -41,6 +55,7 @@ end
 
 -- [ 2. اختيار أفضل جزء مكشوف ]
 local function getBestVisiblePart(character)
+    if not character then return nil end
     local preferredParts = {"Head", "UpperTorso", "Torso", "HumanoidRootPart", "LowerTorso"}
     for _, partName in ipairs(preferredParts) do
         local part = character:FindFirstChild(partName)
@@ -68,8 +83,10 @@ end
 
 -- [ 3. التنبؤ الفيزيائي المستقر ]
 local function getPredictedTargetPosition(targetPlayer, targetPart, dt)
+    if not targetPlayer or not targetPart then return nil end
     local hrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return targetPart.Position end
+    
     local currentPosition = targetPart.Position
     local currentVelocity = hrp.AssemblyLinearVelocity
     local distance = (currentPosition - Camera.CFrame.Position).Magnitude
@@ -89,7 +106,7 @@ local function getClosestPlayer()
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Team ~= LocalPlayer.Team then
+        if isEnemy(player) and player.Character then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             local hrp = player.Character:FindFirstChild("HumanoidRootPart") or player.Character:FindFirstChild("Torso")
             if humanoid and humanoid.Health > 0 and hrp then
@@ -112,7 +129,7 @@ local function getClosestPlayer()
     return nil, nil
 end
 
--- [ 5. حلقة التحديث المستمرة للأيم بوت بقفل فوري واهتزاز معدوم ]
+-- [ 5. حلقة التحديث المستمرة للأيم بوت ]
 RunService.Heartbeat:Connect(function(dt)
     if FOVCircle then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -121,8 +138,9 @@ RunService.Heartbeat:Connect(function(dt)
         local targetPlayer, targetPart = getClosestPlayer()
         if targetPlayer and targetPart then
             local finalTargetPos = getPredictedTargetPosition(targetPlayer, targetPart, dt)
-            -- تم استخدام معادلة Lerp أسرع وأكثر استجابة لالتصاق فوري بالرأس مثل الفيديو تماماً
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, finalTargetPos), Smoothness)
+            if finalTargetPos then
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, finalTargetPos), Smoothness)
+            end
         end
     end
 end)
@@ -133,9 +151,19 @@ end)
 
 
 -- ============================================
--- [ نظام الـ Box ESP التلقائي والمصلح للاعبين الجدد ]
+-- [ نظام الـ Box ESP التلقائي المتكامل ]
 -- ============================================
 local function CreateBoxESP(player)
+    if not player then return end
+    
+    -- تجنب التكرار العشوائي للـ ESP
+    local function cleanExistingESP(char)
+        if char then
+            local existing = char:FindFirstChild("ESP_Box", true)
+            if existing then existing:Destroy() end
+        end
+    end
+
     local BoxGui = Instance.new("BillboardGui")
     BoxGui.Name = "ESP_Box"
     BoxGui.AlwaysOnTop = true
@@ -161,6 +189,8 @@ local function CreateBoxESP(player)
 
     local function ApplyESP(character)
         if not character then return end
+        cleanExistingESP(character)
+        
         local hrp = character:WaitForChild("HumanoidRootPart", 10)
         if hrp then
             BoxGui.Parent = hrp
@@ -170,12 +200,19 @@ local function CreateBoxESP(player)
     if player.Character then
         ApplyESP(player.Character)
     end
-    
     player.CharacterAdded:Connect(ApplyESP)
 
     local connection
     connection = RunService.RenderStepped:Connect(function()
+        -- التحقق المستمر من حالة اتصال اللاعب وتوافق الشخصيات
         if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- الفحص الديناميكي لضمان بقائه خصماً (في حال تغيرت الفرق في منتصف الجيم)
+            if not isEnemy(player) then
+                BoxGui:Destroy()
+                if connection then connection:Disconnect() end
+                return
+            end
+
             local targetHrp = player.Character.HumanoidRootPart
             local myHrp = LocalPlayer.Character.HumanoidRootPart
             
@@ -184,9 +221,9 @@ local function CreateBoxESP(player)
             
             local head = player.Character:FindFirstChild("Head")
             if head and isPartVisible(head) then
-                Stroke.Color = Color3.fromRGB(0, 255, 100)
+                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر مكشوف
             else
-                Stroke.Color = Color3.fromRGB(255, 50, 50)
+                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر خلف جدار
             end
         else
             BoxGui:Destroy()
@@ -195,23 +232,26 @@ local function CreateBoxESP(player)
     end)
 end
 
+-- تفعيل الكشف بطريقة آمنة ومضمونة
 local function checkAndApply(player)
-    if player ~= LocalPlayer then
-        local function onCharacterReady()
-            if player.Team ~= LocalPlayer.Team then
-                CreateBoxESP(player)
-            end
+    if player == LocalPlayer then return end
+    
+    local function onCharacterReady()
+        if isEnemy(player) then
+            CreateBoxESP(player)
         end
-        
-        if player.Character then
-            onCharacterReady()
-        end
-        player.CharacterAdded:Connect(onCharacterReady)
     end
+    
+    if player.Character then
+        onCharacterReady()
+    end
+    player.CharacterAdded:Connect(onCharacterReady)
 end
 
+-- تفعيل فوري للاعبين الحاليين
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
 
+-- تفعيل تلقائي وآمن 100% لأي لاعب جديد ينضم لاحقاً
 Players.PlayerAdded:Connect(checkAndApply)
