@@ -4,12 +4,17 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- [ الإعدادات النهائية المستقرة ]
+-- [ الإعدادات النهائية فائقة التوافق ]
 -- ============================================
 local AimbotEnabled = true
-local BulletSpeed = 1000     -- سرعة الرصاصة للتنبؤ الفيزيائي المستقر
-local Smoothness = 0.35      -- قوة تتبع فوري والتصاق ممتاز بالرأس (مثل الفيديو)
-local FOV_Radius = 150       -- حجم نطاق تفعيل الأيم بوت
+local BulletSpeed = 1000     -- سرعة التنبؤ الفيزيائي
+local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس
+local FOV_Radius = 150       -- قطر دائرة الأيم بوت
+
+-- خيار التحقق من الفرق:
+-- اجعله false (افتراضي) ليعمل السكربت في جميع الألعاب والمودات (فردي وتيمات) دون أي مشاكل.
+-- اجعله true فقط إذا كنت في لعبة تيمات رسمية وتريد تجنب استهداف أعضاء فريقك.
+local UseTeamCheck = false    
 
 -- التحقق الآمن لإنشاء دائرة الـ FOV
 local FOVCircle = nil
@@ -24,17 +29,16 @@ end
 
 local lastVelocities = {}
 
--- دالة ذكية للتحقق التلقائي من الخصوم (تدعم تيم ضد تيم واللعب الفردي FFA تلقائياً)
-local function isEnemy(player)
+-- فحص الاستهداف المتوافق
+local function isValidTarget(player)
     if not player or player == LocalPlayer then return false end
     
-    -- إذا لم يكن هناك نظام فرق في الماب، أو كان الجميع في فريق واحد (FFA)، يعتبر الجميع أعداء
-    if #game:GetService("Teams"):GetTeams() <= 1 then
-        return true
+    -- إذا تم تفعيل فحص الفرق وكان هناك نظام فرق فعلي في اللعبة
+    if UseTeamCheck and player.Team and LocalPlayer.Team then
+        return player.Team ~= LocalPlayer.Team
     end
     
-    -- إذا وجد نظام فرق حقيقي، يتم التحقق من اختلاف الفريق
-    return player.Team ~= LocalPlayer.Team
+    return true -- استهداف الجميع بشكل افتراضي ومضمون
 end
 
 -- [ 1. فحص الجدران والعوائق ]
@@ -106,7 +110,7 @@ local function getClosestPlayer()
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if isEnemy(player) and player.Character then
+        if isValidTarget(player) and player.Character then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             local hrp = player.Character:FindFirstChild("HumanoidRootPart") or player.Character:FindFirstChild("Torso")
             if humanoid and humanoid.Health > 0 and hrp then
@@ -151,12 +155,11 @@ end)
 
 
 -- ============================================
--- [ نظام الـ Box ESP التلقائي المتكامل ]
+-- [ نظام الـ Box ESP المضمون لجميع الألعاب ]
 -- ============================================
 local function CreateBoxESP(player)
     if not player then return end
     
-    -- تجنب التكرار العشوائي للـ ESP
     local function cleanExistingESP(char)
         if char then
             local existing = char:FindFirstChild("ESP_Box", true)
@@ -204,10 +207,9 @@ local function CreateBoxESP(player)
 
     local connection
     connection = RunService.RenderStepped:Connect(function()
-        -- التحقق المستمر من حالة اتصال اللاعب وتوافق الشخصيات
         if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- الفحص الديناميكي لضمان بقائه خصماً (في حال تغيرت الفرق في منتصف الجيم)
-            if not isEnemy(player) then
+            -- فحص مستمر لشرط الاستهداف
+            if not isValidTarget(player) then
                 BoxGui:Destroy()
                 if connection then connection:Disconnect() end
                 return
@@ -221,9 +223,9 @@ local function CreateBoxESP(player)
             
             local head = player.Character:FindFirstChild("Head")
             if head and isPartVisible(head) then
-                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر مكشوف
+                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر (مكشوف)
             else
-                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر خلف جدار
+                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر (خلف عائق)
             end
         else
             BoxGui:Destroy()
@@ -232,12 +234,11 @@ local function CreateBoxESP(player)
     end)
 end
 
--- تفعيل الكشف بطريقة آمنة ومضمونة
 local function checkAndApply(player)
     if player == LocalPlayer then return end
     
     local function onCharacterReady()
-        if isEnemy(player) then
+        if isValidTarget(player) then
             CreateBoxESP(player)
         end
     end
@@ -248,10 +249,10 @@ local function checkAndApply(player)
     player.CharacterAdded:Connect(onCharacterReady)
 end
 
--- تفعيل فوري للاعبين الحاليين
+-- تفعيل فوري ومباشر
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
 
--- تفعيل تلقائي وآمن 100% لأي لاعب جديد ينضم لاحقاً
 Players.PlayerAdded:Connect(checkAndApply)
+
