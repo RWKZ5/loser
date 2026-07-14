@@ -8,7 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================================
 local AimbotEnabled = true
 local BulletSpeed = 1000     -- سرعة التنبؤ الفيزيائي
-local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس (تثبيت قوي جداً)
+local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس
 local FOV_Radius = 150       -- قطر دائرة الأيم بوت
 
 -- خيار التحقق من الفرق:
@@ -38,7 +38,7 @@ local function isValidTarget(player)
         return player.Team ~= LocalPlayer.Team
     end
     
-    return true -- استهداف الجميع بشكل افتراضي ومضمون ليعمل في المود الفردي FFA
+    return true -- استهداف الجميع بشكل افتراضي ومضمون
 end
 
 -- [ 1. فحص الجدران والعوائق ]
@@ -249,10 +249,10 @@ local function checkAndApply(player)
     player.CharacterAdded:Connect(onCharacterReady)
 end
 
--- تفعيل فوري ومباشر لجميع اللاعبين الحاليين في الغرفة
+-- تفعيل فوري ومباشر
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
 
--- تفعيل تلقائي لأي لاعب جديد ينضم لاحقاً
 Players.PlayerAdded:Connect(checkAndApply)
+
