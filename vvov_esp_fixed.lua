@@ -132,82 +132,94 @@ end)
 
 
 -- ============================================
--- [ نظام الـ Box ESP المضمون والمتوافق 100% مع الجوال ]
+-- [ نظام الـ Box ESP التلقائي والمصلح للاعبين الجدد ]
 -- ============================================
 local function CreateBoxESP(player)
     local BoxGui = Instance.new("BillboardGui")
     BoxGui.Name = "ESP_Box"
     BoxGui.AlwaysOnTop = true
-    BoxGui.Size = UDim2.new(4.5, 0, 6, 0) -- حجم المربع حول اللاعب
+    BoxGui.Size = UDim2.new(4.5, 0, 6, 0)
 
-    -- إنشاء إطار المربع (الخطوط الخارجية)
     local Frame = Instance.new("Frame", BoxGui)
     Frame.Size = UDim2.new(1, 0, 1, 0)
-    Frame.BackgroundTransparency = 1 -- شفاف من الداخل
+    Frame.BackgroundTransparency = 1
     
     local Stroke = Instance.new("UIStroke", Frame)
     Stroke.Thickness = 1.5
-    Stroke.Color = Color3.fromRGB(255, 50, 50) -- اللون الافتراضي أحمر
+    Stroke.Color = Color3.fromRGB(255, 50, 50)
 
-    -- إنشاء نص المسافة أسفل المربع
     local DistanceLabel = Instance.new("TextLabel", BoxGui)
     DistanceLabel.Size = UDim2.new(1, 0, 0, 15)
-    DistanceLabel.Position = UDim2.new(0, 0, 1, 2) -- يظهر تحت المربع مباشرة
+    DistanceLabel.Position = UDim2.new(0, 0, 1, 2)
     DistanceLabel.BackgroundTransparency = 1
     DistanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DistanceLabel.TextStrokeTransparency = 0 -- حدود سوداء واضحة
+    DistanceLabel.TextStrokeTransparency = 0
     DistanceLabel.Font = Enum.Font.GothamBold
     DistanceLabel.TextSize = 10
     DistanceLabel.Text = "0m"
 
     local function ApplyESP(character)
-        if character then
-            local hrp = character:WaitForChild("HumanoidRootPart", 5)
-            if hrp then
-                BoxGui.Parent = hrp
-            end
+        if not character then return end
+        -- الانتظار لضمان نزول جسم وموقع اللاعب بالكامل في الماب لتلافي مشاكل الجوال
+        local hrp = character:WaitForChild("HumanoidRootPart", 10)
+        if hrp then
+            BoxGui.Parent = hrp
         end
     end
 
-    ApplyESP(player.Character)
+    -- تشغيله على الشخصية الحالية إن وجدت
+    if player.Character then
+        ApplyESP(player.Character)
+    end
+    
+    -- الاستماع المستمر لكل مرة يموت فيها اللاعب ويرسبن من جديد
     player.CharacterAdded:Connect(ApplyESP)
 
-    -- تحديث المسافة واللون فريم بفريم
+    -- تحديث فريم بفريم للمسافات والألوان
     local connection
     connection = RunService.RenderStepped:Connect(function()
-        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local targetHrp = player.Character.HumanoidRootPart
             local myHrp = LocalPlayer.Character.HumanoidRootPart
             
-            -- حساب المسافة الفعلية
             local distance = math.floor((targetHrp.Position - myHrp.Position).Magnitude)
             DistanceLabel.Text = tostring(distance) .. "m"
             
-            -- تغيير اللون: أخضر إذا كان مكشوفاً للأيم بوت، أحمر إذا كان خلف الجدار
             local head = player.Character:FindFirstChild("Head")
             if head and isPartVisible(head) then
-                Stroke.Color = Color3.fromRGB(0, 255, 100) -- مكشوف (أخضر)
+                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر مكشوف
             else
-                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- خلف جدار (أحمر)
+                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر خلف جدار
             end
         else
-            -- تنظيف عند الموت أو الخروج
             BoxGui:Destroy()
             if connection then connection:Disconnect() end
         end
     end)
 end
 
--- تفعيل الكشف للأعداء
+-- تفعيل الكشف وتصفيته للعدو فقط تلقائياً وفورياً
 local function checkAndApply(player)
     if player ~= LocalPlayer then
-        if player.Team ~= LocalPlayer.Team then
-            CreateBoxESP(player)
+        -- دالة مساعدة للتأكد من حالة الفريق
+        local function onCharacterReady()
+            if player.Team ~= LocalPlayer.Team then
+                CreateBoxESP(player)
+            end
         end
+        
+        -- تشغيل الكشف للخصم فور دخول شخصيته للماب
+        if player.Character then
+            onCharacterReady()
+        end
+        player.CharacterAdded:Connect(onCharacterReady)
     end
 end
 
+-- كشف اللاعبين المتواجدين حالياً بالخادم
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
+
+-- كشف أي لاعب جديد ينضم للعبة لاحقاً وبشكل تلقائي فوري!
 Players.PlayerAdded:Connect(checkAndApply)
