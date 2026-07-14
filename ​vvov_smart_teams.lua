@@ -1,20 +1,19 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Teams = game:GetService("Teams")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================
--- [ الإعدادات النهائية فائقة التوافق ]
+-- [ الإعدادات الأساسية فائقة التوافق ]
 -- ============================================
 local AimbotEnabled = true
-local BulletSpeed = 1000     -- سرعة التنبؤ الفيزيائي
+local BulletSpeed = 1000     -- سرعة الرصاصة للتنبؤ الفيزيائي
 local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس
 local FOV_Radius = 150       -- قطر دائرة الأيم بوت
 
--- خيار التحقق من الفرق:
--- اجعله false (افتراضي) ليعمل السكربت في جميع الألعاب والمودات (فردي وتيمات) دون أي مشاكل.
--- اجعله true فقط إذا كنت في لعبة تيمات رسمية وتريد تجنب استهداف أعضاء فريقك.
-local UseTeamCheck = false    
+-- جدول عالمي لتعقب اتصالات ومربعات الـ ESP لكل لاعب ومنع التكرار
+local ActiveESPs = {}
 
 -- التحقق الآمن لإنشاء دائرة الـ FOV
 local FOVCircle = nil
@@ -29,16 +28,22 @@ end
 
 local lastVelocities = {}
 
--- فحص الاستهداف المتوافق
+-- [ فحص الذكاء الاصطناعي للفرق والأصدقاء ]
 local function isValidTarget(player)
     if not player or player == LocalPlayer then return false end
     
-    -- إذا تم تفعيل فحص الفرق وكان هناك نظام فرق فعلي في اللعبة
-    if UseTeamCheck and player.Team and LocalPlayer.Team then
-        return player.Team ~= LocalPlayer.Team
+    -- التحقق هل الماب يحتوي على تيمات حقيقية ونشطة
+    local totalTeams = Teams:GetTeams()
+    local hasRealTeams = #totalTeams > 1
+    
+    -- إذا كان هناك تيمات حقيقية في الماب وكان اللاعب في نفس تيمك، يتم استبعاده (خويك)
+    if hasRealTeams and player.Team and LocalPlayer.Team then
+        if player.Team == LocalPlayer.Team then
+            return false -- صديق (خويك)، لا تستهدفه
+        end
     end
     
-    return true -- استهداف الجميع بشكل افتراضي ومضمون
+    return true -- عدو (يتم استهدافه بالـ ESP والأيم بوت)
 end
 
 -- [ 1. فحص الجدران والعوائق ]
@@ -155,22 +160,33 @@ end)
 
 
 -- ============================================
--- [ نظام الـ Box ESP المضمون لجميع الألعاب ]
+-- [ نظام الـ Box ESP الجديد فائق الثبات والديناميكية ]
 -- ============================================
+
+-- دالة المسح الصارم للـ ESP القديم
+local function RemoveESP(player)
+    if ActiveESPs[player] then
+        if ActiveESPs[player].Gui then
+            ActiveESPs[player].Gui:Destroy()
+        end
+        if ActiveESPs[player].Connection then
+            ActiveESPs[player].Connection:Disconnect()
+        end
+        ActiveESPs[player] = nil
+    end
+end
+
 local function CreateBoxESP(player)
     if not player then return end
     
-    local function cleanExistingESP(char)
-        if char then
-            local existing = char:FindFirstChild("ESP_Box", true)
-            if existing then existing:Destroy() end
-        end
-    end
+    -- تنظيف فوري لأي تكرار قديم قبل البدء
+    RemoveESP(player)
 
     local BoxGui = Instance.new("BillboardGui")
     BoxGui.Name = "ESP_Box"
     BoxGui.AlwaysOnTop = true
     BoxGui.Size = UDim2.new(4.5, 0, 6, 0)
+    BoxGui.Enabled = false -- نبدأ بوضع الإخفاء حتى تكتمل شروط الظهور
 
     local Frame = Instance.new("Frame", BoxGui)
     Frame.Size = UDim2.new(1, 0, 1, 0)
@@ -192,67 +208,75 @@ local function CreateBoxESP(player)
 
     local function ApplyESP(character)
         if not character then return end
-        cleanExistingESP(character)
-        
         local hrp = character:WaitForChild("HumanoidRootPart", 10)
         if hrp then
             BoxGui.Parent = hrp
+            BoxGui.Adornee = hrp -- تثبيت المربع بدقة متناهية في منتصف اللاعب
         end
     end
 
     if player.Character then
         ApplyESP(player.Character)
     end
-    player.CharacterAdded:Connect(ApplyESP)
 
+    -- تحديث فريم بفريم بشكل ديناميكي كامل ومستقر
     local connection
     connection = RunService.RenderStepped:Connect(function()
         if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- فحص مستمر لشرط الاستهداف
-            if not isValidTarget(player) then
-                BoxGui:Destroy()
-                if connection then connection:Disconnect() end
-                return
-            end
-
-            local targetHrp = player.Character.HumanoidRootPart
-            local myHrp = LocalPlayer.Character.HumanoidRootPart
             
-            local distance = math.floor((targetHrp.Position - myHrp.Position).Magnitude)
-            DistanceLabel.Text = tostring(distance) .. "m"
-            
-            local head = player.Character:FindFirstChild("Head")
-            if head and isPartVisible(head) then
-                Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر (مكشوف)
+            -- فحص مستمر وحي لحالة الاستهداف (يتتبع تغيرات التيم والفرندز ديناميكياً)
+            if isValidTarget(player) then
+                BoxGui.Enabled = true -- إظهار المربع فوراً للخصوم
+                
+                local targetHrp = player.Character.HumanoidRootPart
+                local myHrp = LocalPlayer.Character.HumanoidRootPart
+                
+                local distance = math.floor((targetHrp.Position - myHrp.Position).Magnitude)
+                DistanceLabel.Text = tostring(distance) .. "m"
+                
+                local head = player.Character:FindFirstChild("Head")
+                if head and isPartVisible(head) then
+                    Stroke.Color = Color3.fromRGB(0, 255, 100) -- أخضر مكشوف
+                else
+                    Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر خلف جدار
+                end
             else
-                Stroke.Color = Color3.fromRGB(255, 50, 50)  -- أحمر (خلف عائق)
+                BoxGui.Enabled = false -- إخفاء المربع فوراً لو كان صديقاً/خوياً دون تعطيل الاتصال
             end
         else
-            BoxGui:Destroy()
-            if connection then connection:Disconnect() end
+            BoxGui.Enabled = false
         end
     end)
+
+    -- حفظ الكائنات داخل الجدول العالمي للوصول السريع والتنظيف الصارم
+    ActiveESPs[player] = {
+        Gui = BoxGui,
+        Connection = connection
+    }
 end
 
+-- دالة الربط والتأمين
 local function checkAndApply(player)
     if player == LocalPlayer then return end
     
-    local function onCharacterReady()
-        if isValidTarget(player) then
-            CreateBoxESP(player)
-        end
+    if player.Character then
+        CreateBoxESP(player)
     end
     
-    if player.Character then
-        onCharacterReady()
-    end
-    player.CharacterAdded:Connect(onCharacterReady)
+    -- إعادة البناء التلقائي عند رسبنة اللاعب لضمان تحديث الـ Adornee
+    player.CharacterAdded:Connect(function()
+        CreateBoxESP(player)
+    end)
 end
 
--- تفعيل فوري ومباشر
+-- تفعيل فوري ومستقر للاعبين الحاليين
 for _, player in ipairs(Players:GetPlayers()) do
     checkAndApply(player)
 end
 
+-- مراقبة انضمام اللاعبين الجدد بأمان
 Players.PlayerAdded:Connect(checkAndApply)
+
+-- مسح وتنظيف السكربت عند مغادرة أي لاعب فوراً لمنع تعليق المربعات
+Players.PlayerRemoving:Connect(RemoveESP)
 
