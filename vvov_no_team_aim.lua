@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Teams = game:GetService("Teams")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -10,11 +11,6 @@ local AimbotEnabled = true
 local BulletSpeed = 1000     -- سرعة التنبؤ الفيزيائي
 local Smoothness = 0.35      -- سرعة الالتصاق التام بالرأس
 local FOV_Radius = 150       -- قطر دائرة الأيم بوت
-
--- خيار التحقق من الفرق:
--- اجعله false (افتراضي) ليعمل السكربت في جميع الألعاب والمودات (فردي وتيمات) دون أي مشاكل.
--- اجعله true فقط إذا كنت في لعبة تيمات رسمية وتريد تجنب استهداف أعضاء فريقك.
-local UseTeamCheck = false    
 
 -- التحقق الآمن لإنشاء دائرة الـ FOV
 local FOVCircle = nil
@@ -29,16 +25,27 @@ end
 
 local lastVelocities = {}
 
--- فحص الاستهداف المتوافق
+-- [ فحص الاستهداف الذكي والآمن لمنع استهداف خوياك ]
 local function isValidTarget(player)
     if not player or player == LocalPlayer then return false end
     
-    -- إذا تم تفعيل فحص الفرق وكان هناك نظام فرق فعلي في اللعبة
-    if UseTeamCheck and player.Team and LocalPlayer.Team then
-        return player.Team ~= LocalPlayer.Team
+    -- تحقق من وجود نظام تيمات رسمي ونشط في الماب
+    local totalTeams = Teams:GetTeams()
+    local hasActiveTeams = #totalTeams > 1
+    
+    -- إذا كان الماب يحتوي على فرق وكان هذا اللاعب معك في نفس التيم (خويك) -> لا تستهدفه أبداً
+    if hasActiveTeams and player.Team and LocalPlayer.Team then
+        if player.Team == LocalPlayer.Team then
+            return false
+        end
     end
     
-    return true -- استهداف الجميع بشكل افتراضي ومضمون
+    -- فحص حماية إضافي في حال كانت اللعبة تستخدم ألواناً لتمييز الفرق
+    if hasActiveTeams and player.TeamColor == LocalPlayer.TeamColor then
+        return false
+    end
+    
+    return true -- استهداف الأعداء فقط بشكل مضمون وتلقائي
 end
 
 -- [ 1. فحص الجدران والعوائق ]
@@ -208,7 +215,7 @@ local function CreateBoxESP(player)
     local connection
     connection = RunService.RenderStepped:Connect(function()
         if player and player.Parent and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- فحص مستمر لشرط الاستهداف
+            -- فحص مستمر لشرط الاستهداف (يخفي الـ ESP تلقائياً إذا أصبح اللاعب خويك)
             if not isValidTarget(player) then
                 BoxGui:Destroy()
                 if connection then connection:Disconnect() end
@@ -255,4 +262,3 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(checkAndApply)
-
